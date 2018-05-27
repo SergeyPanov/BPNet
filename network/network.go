@@ -118,7 +118,7 @@ func (net *Network) learningStep(ideal []float64) {
 func (net *Network) calculateRootMSE(ideal []float64) float64 {
 	divided := 0.0
 	for i := range ideal {
-		divided += math.Pow(ideal[i] - net.output[i].fire, 2)
+		divided += math.Pow(ideal[i]-net.output[i].fire, 2)
 	}
 	return math.Sqrt(divided / (float64(len(ideal))))
 }

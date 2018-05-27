@@ -10,7 +10,7 @@ import (
 	"fmt"
 )
 
-func readContent(path string)[][]float64  {
+func readContent(path string) [][]float64 {
 	bs, err := ioutil.ReadFile(path)
 	if err != nil {
 		print("File ", path, " does not exists.")
@@ -23,7 +23,7 @@ func readContent(path string)[][]float64  {
 
 		var convertedNumbers []float64
 
-		for n := 0; n < len(numbers); n++{
+		for n := 0; n < len(numbers); n++ {
 			converted, err := strconv.ParseFloat(numbers[n], 64)
 			if err != nil {
 				print("Invalid file")
@@ -52,7 +52,6 @@ func main() {
 	epochs := flag.Int("ep", -1, "Stop condition is number of epochs.")
 	deviation := flag.Float64("dv", -1, "Stop condition is deviation.")
 
-
 	flag.Parse()
 	readContent(*trainingSet)
 
@@ -63,21 +62,17 @@ func main() {
 	inputLayer := len(ts[0])
 	outputLayer := len(is[0])
 
-
 	net.Init(inputLayer, *hiddenLayer, outputLayer, *learningRate, *momentum)
 
 	if *epochs > 0 {
 		net.LearnEpochs(*epochs, ts, is)
-	}else if *deviation > 0 {
+	} else if *deviation > 0 {
 		net.LearnError(*deviation, ts, is)
 	}
 
-
-	for i := 0; i < len(us);  i++ {
+	for i := 0; i < len(us); i++ {
 		net.Calculate(us[i])
 		fmt.Println(net.Result())
 	}
-
-
 
 }
