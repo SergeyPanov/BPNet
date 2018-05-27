@@ -7,12 +7,13 @@ import (
 
 type Network struct {
 	input, hidden, output []Neuron
+	e, m float64
 }
 
-
 //Create input, hidden, output layers of neurons and connect them
-
-func (net *Network) Init(in, hd, ou int)  {
+func (net *Network) Init(in, hd, ou int, e, m float64)  {
+	net.e = e
+	net.m = m
 	net.input = make([]Neuron, in)
 	net.hidden = make([]Neuron, hd)
 	net.output = make([]Neuron, ou)
@@ -20,7 +21,7 @@ func (net *Network) Init(in, hd, ou int)  {
 	//Connect input layer and hidden layer
 	for i := 0; i < in; i++ {
 		for j := 0; j < hd; j++ {
-			synapse := Synapse{&net.input[i], &net.hidden[j], rand.Float64()}
+			synapse := Synapse{&net.input[i], &net.hidden[j], rand.Float64(), 0.0}
 			net.input[i].oSynapse = append(net.input[i].oSynapse, &synapse)
 			net.hidden[j].iSynapse = append(net.hidden[j].iSynapse, &synapse)
 		}
@@ -29,7 +30,7 @@ func (net *Network) Init(in, hd, ou int)  {
 	//Connect hidden layer and output layer
 	for i := 0; i < hd; i++ {
 		for j := 0; j < ou; j ++ {
-			synapse := Synapse{&net.hidden[i], &net.output[j], rand.Float64()}
+			synapse := Synapse{&net.hidden[i], &net.output[j], rand.Float64(), 0.0}
 			net.hidden[i].oSynapse = append(net.hidden[i].oSynapse, &synapse)
 			net.output[j].iSynapse = append(net.output[j].iSynapse, &synapse)
 		}
@@ -42,7 +43,7 @@ func (net *Network) Calculate(vec []float64) []float64 {
 	outputVector := make([]float64, len(net.output))
 
 	//Fire of input neuron is an input vector
-	for i, _ := range net.input{
+	for i := range net.input{
 		net.input[i].fire = vec[i]
 	}
 
@@ -85,24 +86,40 @@ func (net *Network) deltaHidden(index int) {
 		sum += net.hidden[index].oSynapse[i].weight * net.hidden[index].oSynapse[i].toNeuron.delta
 	}
 	net.hidden[index].delta = sum * net.hidden[index].DSigmoid()
+}
 
-	fmt.Println("DELTA HIDDEN: ")
-	fmt.Println(net.hidden[index].delta )
-
+//Calculate gradient and delta, update weights base on calculated values
+func (net *Network) updateWeights(neuron *Neuron){
+	for i := 0; i < len(neuron.oSynapse) ; i++  {
+		grad := neuron.oSynapse[i].toNeuron.delta * neuron.fire
+		deltaW := net.e * grad + net.m * neuron.oSynapse[i].deltaPrevWeight
+		neuron.oSynapse[i].deltaPrevWeight = deltaW
+		neuron.oSynapse[i].weight += deltaW
+	}
 }
 
 func (net *Network) Learn(ideal []float64) {
+	net.deltaOut(ideal)
+	for i  := 0; i < len(net.hidden); i++ {
+		net.deltaHidden(i)
+		net.updateWeights(&net.hidden[i])
+	}
 
-	deltaO := net.deltaOut(ideal)
-
-	net.deltaHidden(0)
-
-
-	fmt.Println("DELTA O: ")
-	fmt.Println(deltaO)
-	fmt.Println(net.output)
+	for i := 0; i < len(net.input) ; i++  {
+		net.updateWeights(&net.input[i])
+	}
 }
 
+// Return result
+func (net *Network) Result() []float64  {
+
+	res := make([]float64, len(net.output))
+
+	for i := 0; i < len(net.output) ; i++  {
+		res[i] = net.output[i].fire
+	}
+	return res
+}
 
 
 func (net *Network) Dump(){
@@ -131,6 +148,5 @@ func (net *Network) Dump(){
 	for i, on := range net.output{
 		fmt.Println("Fire of nuron: ", i, " is: ", on.fire)
 	}
-
 
 }
